@@ -8,9 +8,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
-	"strconv"
 )
 
 const SERVER_URL = "http://localhost:8501/v1/models/resnet:predict"
@@ -43,31 +41,40 @@ func receiveImage(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	log.Info("Successfully Received File\n")
 	return fileBytes, nil
 }
+type (
+	TensorFlowResp struct {
+		instances map[string][]map[string]interface{}
 
+	}
+)
 
 func evaluateImage(w http.ResponseWriter, r *http.Request) {
-	nb := rand.Int63n(100)
-	s1 := strconv.FormatInt(int64(nb), 10)
+	var mp TensorFlowResp
 	imgBytes, err := receiveImage(w, r)
+
 	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest) ; fmt.Fprintln(w, fmt.Sprintf("%v", err)) ; return
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(imgBytes)
-	res, err := http.Post(SERVER_URL, "application/json", bytes.NewBuffer([]byte(encoded))) ; if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
+	b64Img := base64.StdEncoding.EncodeToString(imgBytes)
+	request := fmt.Sprintf("{\"instances\" : [{\"b64\": \"%s\"}]}", b64Img)
+
+
+	TFSRes, err := http.Post(SERVER_URL, "application/json", bytes.NewBuffer([]byte(request))) ; if err != nil {
+		w.WriteHeader(http.StatusBadRequest) ; fmt.Fprintln(w, fmt.Sprintf("%v", err)) ; return
 	}
 	//we dont know the exact content of the json so we create a map
-	mp := make(map[string]interface{})
-	err = json.NewDecoder(res.Body).Decode(&mp)
+	body, err := ioutil.ReadAll(TFSRes.Body)
+	err = json.Unmarshal(body, &mp.instances)
 	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest) ; fmt.Fprintln(w, fmt.Sprintf("%v", err)) ; return
 	}
-	fmt.Println(mp)
-	// Declare a new Person struct.
-	fmt.Println(res.Header, res.Body)
-	w.Write([]byte(s1))
+
+	// we need to resolve the right types and then get our value
+	probabilities := mp.instances["predictions"][0]["probabilities"].([]interface{})
+	class := int(mp.instances["predictions"][0]["classes"].(float64))
+	probability := probabilities[class].(float64)
+
+	// return the result to the user
+	w.Write([]byte(fmt.Sprintf("class: %d,  probability: %.8f", class, probability)))
 }
