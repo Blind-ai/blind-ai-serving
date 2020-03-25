@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/blind-ai-serving/pkg/skin/api"
 	log "github.com/sirupsen/logrus"
-	"github.com/blind-ai-serving/pkg/fall/api"
 )
 
 // read the key files before starting http handlers

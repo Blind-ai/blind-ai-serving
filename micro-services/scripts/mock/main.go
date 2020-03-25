@@ -45,8 +45,8 @@ func checkFile(r *http.Request) (bool, string, string) {
 	fType := r.FormValue("type")
 
 	// verify that the file type is linked to one of our three AI
-	if fType != "fall" && fType != "lungh" && fType != "skin" {
-		return false, "field \"type\" is wrong, should be : \"fall\", \"lungh\" or \"skin\"", ""
+	if fType != "skin" && fType != "lungh" && fType != "skin" {
+		return false, "field \"type\" is wrong, should be : \"skin\", \"lungh\" or \"skin\"", ""
 	}
 	// open the file contained in the html request
 	file, handler, err := r.FormFile("myFile")

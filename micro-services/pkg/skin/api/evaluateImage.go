@@ -49,7 +49,7 @@ type (
 )
 
 func evaluateImage(w http.ResponseWriter, r *http.Request) {
-	log.Println("received request")
+	fmt.Println("received request")
 	var mp TensorFlowResp
 	imgBytes, err := receiveImage(w, r)
 
