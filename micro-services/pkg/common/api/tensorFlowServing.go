@@ -18,19 +18,19 @@ func execTFS(cmd *exec.Cmd) {
 	fmt.Println(out.String())
 }
 
-func runTFS(w http.ResponseWriter, r *http.Request) {
+func RunTFS(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("docker",
 		"run",
-			"-p",
-			"8501:8501",
+			"--publish",
+			r.FormValue("publish"),
 			"--name",
-			"tfserving_resnet",
+			r.FormValue("name"),
 			"--mount",
-			"type=bind,source=/tmp/resnet,target=/models/resnet",
-			"-e",
-			"MODEL_NAME=resnet",
-			"-t",
-			"tensorflow/serving",
+			r.FormValue("mount"),
+			"--env",
+			r.FormValue("env"),
+			"--tty",
+			r.FormValue("tty"),
 			"--rm")
 
 	_, err := exec.LookPath("docker")
@@ -39,13 +39,14 @@ func runTFS(w http.ResponseWriter, r *http.Request) {
 	}
 	go execTFS(cmd)
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("running " + r.FormValue("name")))
 }
 
-func removeTFS(w http.ResponseWriter, r *http.Request) {
+func RemoveTFS(w http.ResponseWriter, r *http.Request) {
 	var out bytes.Buffer
 	cmd := exec.Command("docker",
 		"rm",
-		"tfserving_resnet")
+		r.FormValue("name"))
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
@@ -54,32 +55,34 @@ func removeTFS(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(out.String())
 	w.WriteHeader(http.StatusOK)
-	w.Write(out.Bytes())
+	w.Write([]byte("removed " + r.FormValue("name")))
 }
 
 
-func startTFS(w http.ResponseWriter, r *http.Request) {
+func StartTFS(w http.ResponseWriter, r *http.Request) {
 	var out bytes.Buffer
 	cmd := exec.Command("docker",
-		"start", "tfserving_resnet")
+		"start",
+		r.FormValue("name"))
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden) ; fmt.Fprintln(w, fmt.Sprintf("%v", err)) ; return
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write(out.Bytes())
+	w.Write([]byte("started " + r.FormValue("name")))
 }
 
-func stopTFS(w http.ResponseWriter, r *http.Request) {
+func StopTFS(w http.ResponseWriter, r *http.Request) {
 	var out bytes.Buffer
 	cmd := exec.Command("docker",
-		"kill", "tfserving_resnet")
+		"kill",
+		r.FormValue("name"))
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden) ; fmt.Fprintln(w, fmt.Sprintf("%v", err)) ; return
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write(out.Bytes())
+	w.Write([]byte("stopped " + r.FormValue("name")))
 }

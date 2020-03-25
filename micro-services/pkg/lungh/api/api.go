@@ -1,6 +1,7 @@
 package api
 
 import (
+	commonApi "github.com/blind-ai-serving/pkg/common/api"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"log"
@@ -18,10 +19,10 @@ func init() {
 }
 
 func HandleRequests() {
-	Router.HandleFunc("/api/lungh/run", runTFS).Methods("GET")
-	Router.HandleFunc("/api/lungh/remove", removeTFS).Methods("GET")
-	Router.HandleFunc("/api/lungh/start", startTFS).Methods("GET")
-	Router.HandleFunc("/api/lungh/stop", stopTFS).Methods("GET")
+	Router.HandleFunc("/api/lungh/run", commonApi.RunTFS).Methods("GET")
+	Router.HandleFunc("/api/lungh/remove", commonApi.RemoveTFS).Methods("GET")
+	Router.HandleFunc("/api/lungh/start", commonApi.StartTFS).Methods("GET")
+	Router.HandleFunc("/api/lungh/stop", commonApi.StopTFS).Methods("GET")
 
 	Router.HandleFunc("/api/lungh/evaluate/image", evaluateImage).Methods("POST")
 
