@@ -30,9 +30,20 @@ func RunTFS(w http.ResponseWriter, r *http.Request) {
 			"--env",
 			r.FormValue("env"),
 			"--tty",
-			r.FormValue("tty"),
-			"--rm")
+			r.FormValue("tty"))
 
+	fmt.Println("docker",
+		"run",
+		"--publish",
+		r.FormValue("publish"),
+		"--name",
+		r.FormValue("name"),
+		"--mount",
+		r.FormValue("mount"),
+		"--env",
+		r.FormValue("env"),
+		"--tty",
+		r.FormValue("tty"))
 	_, err := exec.LookPath("docker")
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden) ; fmt.Fprintln(w, fmt.Sprintf("%v", err)) ; return

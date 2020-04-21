@@ -7,7 +7,7 @@ import (
 
 // read the key files before starting http handlers
 func init() {
-	log.Info("init finished")
+	log.Info("init lungh finished")
 }
 
 func main() {
