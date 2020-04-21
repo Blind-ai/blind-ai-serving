@@ -9,9 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+	"os"
 )
-
-const SERVER_URL = "http://localhost:8501/v1/models/resnet:predict"
 
 func receiveVideo(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	err := r.ParseMultipartForm(20 << 20)
@@ -51,6 +50,8 @@ type (
 
 func evaluateVideo(w http.ResponseWriter, r *http.Request) {
 	log.Println("received request")
+	//const SERVER_URL = "http://localhost:8501/v1/models/resnet:predict"
+	var endpoint = os.Getenv("RESNET_ENDPOINT")
 	var mp TensorFlowResp
 	imgBytes, err := receiveVideo(w, r)
 
@@ -62,14 +63,13 @@ func evaluateVideo(w http.ResponseWriter, r *http.Request) {
 	request := fmt.Sprintf("{\"instances\" : [{\"b64\": \"%s\"}]}", b64Img)
 
 
-	TFSRes, err := http.Post(SERVER_URL, "application/json", bytes.NewBuffer([]byte(request))) ; if err != nil {
+	TFSRes, err := http.Post(endpoint, "application/json", bytes.NewBuffer([]byte(request))) ; if err != nil {
 		w.WriteHeader(http.StatusBadRequest) ; fmt.Fprintln(w, fmt.Sprintf("%v", err)) ; return
 	}
 	//we dont know the exact content of the json so we create a map
 	body, err := ioutil.ReadAll(TFSRes.Body)
 	err = json.Unmarshal(body, &mp.instances)
 	if err != nil {
-		fmt.Println("ai eroor")
 		w.WriteHeader(http.StatusBadRequest) ; fmt.Fprintln(w, fmt.Sprintf("%v", err)) ; return
 	}
 
