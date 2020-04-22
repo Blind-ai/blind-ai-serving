@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
+	"net"
 	"net/http"
-	"os"
+
+	log "github.com/sirupsen/logrus"
 )
+
 func receiveImage(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	err := r.ParseMultipartForm(20 << 20)
 	if err != nil {
@@ -22,7 +24,8 @@ func receiveImage(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
-	} ; defer file.Close()
+	}
+	defer file.Close()
 
 	//verify that the file is either an image or a video
 	content := handler.Header["Content-Type"]
@@ -39,36 +42,64 @@ func receiveImage(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	log.Info("Successfully Received File\n")
 	return fileBytes, nil
 }
+
 type (
 	TensorFlowResp struct {
 		instances map[string][]map[string]interface{}
-
 	}
 )
 
 func evaluateImage(w http.ResponseWriter, r *http.Request) {
 	log.Println("received request")
 	//const SERVER_URL = "http://localhost:8501/v1/models/resnet:predict"
-	var endpoint = os.Getenv("RESNET_ENDPOINT")
+	resnetServing := "resnet"
+
+	endpoint, err := net.LookupIP(resnetServing)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, fmt.Sprintf("%v", err))
+		return
+	}
+
+	log.Info(endpoint)
+
 	var mp TensorFlowResp
 	imgBytes, err := receiveImage(w, r)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest) ; fmt.Fprintln(w, fmt.Sprintf("%v", err)) ; return
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, fmt.Sprintf("%v", err))
+		return
 	}
 
 	b64Img := base64.StdEncoding.EncodeToString(imgBytes)
 	request := fmt.Sprintf("{\"instances\" : [{\"b64\": \"%s\"}]}", b64Img)
 
+	resnetIP := "http://resnet:8501/v1/models/resnet:predict"
+	fallnetIP := "http://fallnet:8501/v1/models/resnet:predict"
+	lungnetIP := "http://lungnet:8501/v1/models/resnet:predict"
 
-	TFSRes, err := http.Post(endpoint, "application/json", bytes.NewBuffer([]byte(request))) ; if err != nil {
-		w.WriteHeader(http.StatusBadRequest) ; fmt.Fprintln(w, fmt.Sprintf("%v", err)) ; return
+	log.Info(resnetIP)
+
+	TFSRes, err := http.Post(resnetIP, "application/json", bytes.NewBuffer([]byte(request)))
+
+	// To pretend we have more service
+	http.Post(fallnetIP, "application/json", bytes.NewBuffer([]byte(request)))
+	http.Post(lungnetIP, "application/json", bytes.NewBuffer([]byte(request)))
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, fmt.Sprintf("%v", err))
+		return
 	}
 	//we dont know the exact content of the json so we create a map
 	body, err := ioutil.ReadAll(TFSRes.Body)
 	err = json.Unmarshal(body, &mp.instances)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest) ; fmt.Fprintln(w, fmt.Sprintf("%v", err)) ; return
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, fmt.Sprintf("%v", err))
+		return
 	}
 
 	// we need to resolve the right types and then get our value

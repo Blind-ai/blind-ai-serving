@@ -1,0 +1,231 @@
+##################################################################################################
+# Productpage services
+##################################################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: inference
+  labels:
+    app: inference
+    service: inference
+spec:
+  ports:
+  - port: 8001
+    name: http
+  selector:
+    app: inference
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: blind-inference
+  labels:
+    account: inference
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inference-v1
+  labels:
+    app: inference
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inference
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: inference
+        version: v1
+    spec:
+      serviceAccountName: blind-inference
+      imagePullSecrets:
+      - name: awsecr-cred
+      containers:
+      - name: inference
+        image: 975564382537.dkr.ecr.eu-west-1.amazonaws.com/blind-ai-serving:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8001
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---
+##################################################################################################
+# Service account
+##################################################################################################
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: blind-tf-serving
+  labels:
+    account: tf-serving
+
+---
+
+##################################################################################################
+# Tensorflow serving Resnet services
+##################################################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: resnet
+  labels:
+    app: resnet
+    service: resnet
+spec:
+  ports:
+  - port: 8501
+    name: http
+  selector:
+    app: resnet
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resnet-v1
+  labels:
+    app: resnet
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: resnet
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: resnet
+        version: v1
+    spec:
+      serviceAccountName: blind-tf-serving
+      imagePullSecrets:
+      - name: awsecr-cred
+      containers:
+      - name: resnet
+        image: 975564382537.dkr.ecr.eu-west-1.amazonaws.com/tf-serving-resnet-cpu:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8501
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---
+
+##################################################################################################
+# Tensorflow serving Resnet services
+##################################################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: fallnet
+  labels:
+    app: fallnet
+    service: fallnet
+spec:
+  ports:
+  - port: 8501
+    name: http
+  selector:
+    app: fallnet
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fallnet-v1
+  labels:
+    app: fallnet
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fallnet
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: fallnet
+        version: v1
+    spec:
+      serviceAccountName: blind-tf-serving
+      imagePullSecrets:
+      - name: awsecr-cred
+      containers:
+      - name: fallnet
+        image: 975564382537.dkr.ecr.eu-west-1.amazonaws.com/tf-serving-resnet-cpu:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8501
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---
+
+##################################################################################################
+# Tensorflow serving Resnet services
+##################################################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: lungnet
+  labels:
+    app: lungnet
+    service: lungnet
+spec:
+  ports:
+  - port: 8501
+    name: http
+  selector:
+    app: lungnet
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lungnet-v1
+  labels:
+    app: lungnet
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lungnet
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: lungnet
+        version: v1
+    spec:
+      serviceAccountName: blind-tf-serving
+      imagePullSecrets:
+      - name: awsecr-cred
+      containers:
+      - name: lungnet
+        image: 975564382537.dkr.ecr.eu-west-1.amazonaws.com/tf-serving-resnet-cpu:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8501
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---
+

@@ -1,11 +1,12 @@
 package api
 
 import (
+	"log"
+	"net/http"
+
 	commonApi "github.com/blind-ai-serving/pkg/common/api"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"log"
-	"net/http"
 )
 
 func ToAssign(w http.ResponseWriter, r *http.Request) {
