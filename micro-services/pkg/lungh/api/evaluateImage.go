@@ -6,13 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net"
 	"net/http"
-
-	log "github.com/sirupsen/logrus"
 )
-
 func receiveImage(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	err := r.ParseMultipartForm(20 << 20)
 	if err != nil {

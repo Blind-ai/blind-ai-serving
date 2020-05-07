@@ -21,11 +21,13 @@ func init() {
 
 func HandleRequests() {
 	Router.HandleFunc("/api/lungh/run", commonApi.RunTFS).Methods("GET")
+	Router.HandleFunc("/api/lungh/runGpu", commonApi.RunTFSGpu).Methods("GET")
 	Router.HandleFunc("/api/lungh/remove", commonApi.RemoveTFS).Methods("GET")
 	Router.HandleFunc("/api/lungh/start", commonApi.StartTFS).Methods("GET")
 	Router.HandleFunc("/api/lungh/stop", commonApi.StopTFS).Methods("GET")
 
 	Router.HandleFunc("/api/lungh/evaluate/image", evaluateImage).Methods("POST")
+	Router.HandleFunc("/api/lungh/evaluateGpu/image", EvaluateImageGpu).Methods("POST")
 
 	credentials := handlers.AllowCredentials()
 	exposed := handlers.ExposedHeaders([]string{"X-Csrf-Token"})
