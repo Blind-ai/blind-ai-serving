@@ -2,15 +2,15 @@ package api
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
-	"net"
 	"net/http"
+	"time"
 )
+
 func receiveImage(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	err := r.ParseMultipartForm(20 << 20)
 	if err != nil {
@@ -22,8 +22,7 @@ func receiveImage(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
-	}
-	defer file.Close()
+	} ; defer file.Close()
 
 	//verify that the file is either an image or a video
 	content := handler.Header["Content-Type"]
@@ -40,71 +39,49 @@ func receiveImage(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	log.Info("Successfully Received File\n")
 	return fileBytes, nil
 }
-
 type (
 	TensorFlowResp struct {
-		instances map[string][]map[string]interface{}
+		instances map[string]string
+	}
+	Response struct {
+		Type			string
+		Probability   	float32
+		ProcessingTime	string
 	}
 )
 
 func evaluateImage(w http.ResponseWriter, r *http.Request) {
 	log.Println("received request")
-	//const SERVER_URL = "http://localhost:8501/v1/models/resnet:predict"
-	resnetServing := "resnet"
+	var bodyBytes []byte
+	var imgBytes []byte
+	var err error
+	var endpoint = "http://localhost:8501/api/lungh/compute"//var endpoint = os.Getenv("RESNET_ENDPOINT")
+	fmt.Println("envpoint:", endpoint)
+	var response Response
+	var t = time.Now()
 
-	endpoint, err := net.LookupIP(resnetServing)
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, fmt.Sprintf("%v", err))
-		return
+	if imgBytes, err = receiveImage(w, r) ; err != nil {
+		w.WriteHeader(http.StatusBadRequest) ; fmt.Fprintln(w, fmt.Sprintf("%v", err)) ; return
+	}
+	resp, err := http.Post(endpoint, "image", bytes.NewReader(imgBytes)) ; if err != nil {
+		fmt.Println(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		w.WriteHeader(http.StatusBadRequest);fmt.Fprintln(w, fmt.Sprintf("%v", err));return
+	}
+	if bodyBytes, err = ioutil.ReadAll(resp.Body) ; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError) ; return
+	}
+	fmt.Println(string(bodyBytes))
+	if err = json.Unmarshal(bodyBytes, &response); err != nil {
+		fmt.Println("unmarshallError")
+		http.Error(w, err.Error(), http.StatusInternalServerError) ; return
 	}
 
-	log.Info(endpoint)
-
-	var mp TensorFlowResp
-	imgBytes, err := receiveImage(w, r)
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, fmt.Sprintf("%v", err))
-		return
+	response.ProcessingTime = time.Since(t).String()
+	if toSend, err := json.Marshal(response); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		w.Write(toSend)
 	}
-
-	b64Img := base64.StdEncoding.EncodeToString(imgBytes)
-	request := fmt.Sprintf("{\"instances\" : [{\"b64\": \"%s\"}]}", b64Img)
-
-	resnetIP := "http://resnet:8501/v1/models/resnet:predict"
-	fallnetIP := "http://fallnet:8501/v1/models/resnet:predict"
-	lungnetIP := "http://lungnet:8501/v1/models/resnet:predict"
-
-	log.Info(resnetIP)
-
-	TFSRes, err := http.Post(resnetIP, "application/json", bytes.NewBuffer([]byte(request)))
-
-	// To pretend we have more service
-	http.Post(fallnetIP, "application/json", bytes.NewBuffer([]byte(request)))
-	http.Post(lungnetIP, "application/json", bytes.NewBuffer([]byte(request)))
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, fmt.Sprintf("%v", err))
-		return
-	}
-	//we dont know the exact content of the json so we create a map
-	body, err := ioutil.ReadAll(TFSRes.Body)
-	err = json.Unmarshal(body, &mp.instances)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, fmt.Sprintf("%v", err))
-		return
-	}
-
-	// we need to resolve the right types and then get our value
-	probabilities := mp.instances["predictions"][0]["probabilities"].([]interface{})
-	class := int(mp.instances["predictions"][0]["classes"].(float64))
-	probability := probabilities[class].(float64)
-
-	// return the result to the user
-	w.Write([]byte(fmt.Sprintf("class: %d,  probability: %.8f", class, probability)))
 }
