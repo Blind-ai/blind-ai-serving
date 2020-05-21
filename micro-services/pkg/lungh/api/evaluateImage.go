@@ -18,7 +18,7 @@ func receiveImage(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	}
 
 	// open the file contained in the html request
-	file, handler, err := r.FormFile("myFile")
+	file, handler, err := r.FormFile("file")
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
