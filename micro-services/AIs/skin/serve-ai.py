@@ -51,5 +51,4 @@ def Compute():
 
 
 if __name__ == '__main__':
-
-    app.run(host='0.0.0.0', port=8502)
+    app.run(host='0.0.0.0', port=8501)
