@@ -1,0 +1,14 @@
+version: "3"
+services:
+  dermatologia:
+    container_name: dermatologia
+    build:
+      context: ./dermatologia
+    ports:
+      - "8001:8000"
+  pneumology:
+    container_name: pneumology
+    build:
+      context: ./pneumology
+    ports:
+      - "8002:8000"

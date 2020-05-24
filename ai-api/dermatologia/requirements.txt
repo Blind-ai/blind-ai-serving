@@ -1,0 +1,6 @@
+-i https://pypi.org/simple
+tensorflow==1.15.2
+scikit-image==0.17.2
+loguru
+flask
+keras
