@@ -13,7 +13,7 @@ imagecodecs==2020.2.18
 imageio==2.8.0
 immutables==0.14
 itsdangerous==1.1.0
-jinja2==2.11.2
+jinja2==2.11.3
 kiwisolver==1.2.0
 loguru==0.5.0
 markupsafe==1.1.1
